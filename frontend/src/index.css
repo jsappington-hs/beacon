@@ -35,6 +35,12 @@ body {
 
   .sidebar {
     transform: translateX(-100%);
+    /* Use dynamic viewport height to account for mobile browser chrome */
+    height: -webkit-fill-available !important;
+    height: 100dvh !important;
+    max-height: -webkit-fill-available !important;
+    max-height: 100dvh !important;
+    overflow-y: auto !important;
   }
 
   .sidebar.open {
@@ -98,28 +104,61 @@ body {
     border: 1px solid #e5e7eb !important;
     border-radius: 12px;
     padding: 16px;
-    gap: 8px;
+    gap: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   }
 
   .responsive-table td {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 4px 0 !important;
+    padding: 0 !important;
     border: none !important;
   }
 
   .responsive-table td::before {
     content: attr(data-label);
-    font-weight: 600;
-    font-size: 12px;
+    font-weight: 500;
+    font-size: 13px;
     color: #6b7280;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    min-width: 90px;
   }
 
-  /* Hide email on mobile cards for cleaner look */
-  .responsive-table td[data-label="Email"] {
+  /* Name cell - make it prominent as card header */
+  .responsive-table td[data-label="Name"] {
+    border-bottom: 1px solid #f3f4f6 !important;
+    padding-bottom: 12px !important;
+    margin-bottom: 4px;
+  }
+
+  .responsive-table td[data-label="Name"]::before {
+    display: none;
+  }
+
+  .responsive-table td[data-label="Name"] > div {
+    width: 100%;
+  }
+
+  /* Role badge - make it stand out */
+  .responsive-table td[data-label="Role"] {
+    border-top: 1px solid #f3f4f6 !important;
+    padding-top: 12px !important;
+    margin-top: 4px;
+  }
+
+  .responsive-table td[data-label="Role"]::before {
+    display: none;
+  }
+
+  .responsive-table td[data-label="Role"] > span {
+    width: 100%;
+    text-align: center;
+    padding: 8px 12px !important;
+  }
+
+  /* Hide email and manager on mobile cards for cleaner look */
+  .responsive-table td[data-label="Email"],
+  .responsive-table td[data-label="Manager"] {
     display: none;
   }
 
