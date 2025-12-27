@@ -20,6 +20,9 @@ if (!/^[a-fA-F0-9]{64}$/.test(ENCRYPTION_KEY)) {
   );
 }
 
+// Store validated key as Buffer for use in crypto operations
+const KEY_BUFFER = Buffer.from(ENCRYPTION_KEY, 'hex');
+
 /**
  * Encrypts sensitive data using AES-256-GCM
  * @param text Plain text to encrypt
@@ -29,7 +32,7 @@ export function encrypt(text: string): string {
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv(
     ALGORITHM,
-    Buffer.from(ENCRYPTION_KEY, 'hex'),
+    KEY_BUFFER,
     iv
   );
 
@@ -58,7 +61,7 @@ export function decrypt(encryptedData: string): string {
 
   const decipher = crypto.createDecipheriv(
     ALGORITHM,
-    Buffer.from(ENCRYPTION_KEY, 'hex'),
+    KEY_BUFFER,
     iv
   );
 
