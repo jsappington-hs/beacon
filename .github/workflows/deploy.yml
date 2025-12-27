@@ -1,0 +1,104 @@
+# Beacon CI/CD Pipeline
+#
+# This workflow deploys the backend to the Hetzner VPS on push to main.
+# Frontend is deployed separately via Cloudflare Pages (auto-deploys on push).
+#
+# Required GitHub Secrets:
+#   VPS_HOST     - VPS IP address (e.g., 188.245.242.170)
+#   VPS_USER     - SSH username (e.g., root)
+#   VPS_SSH_KEY  - Private SSH key content
+
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # Allow manual trigger from GitHub UI
+
+jobs:
+  # Job 1: Verify the code builds successfully
+  build-and-verify:
+    name: Build & Verify
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: backend
+        run: npx prisma generate
+
+      - name: Build backend
+        working-directory: backend
+        run: npm run build
+
+      - name: Verify build artifacts
+        working-directory: backend
+        run: |
+          if [ -d "dist" ]; then
+            echo "Build successful - dist folder exists"
+            ls -la dist/
+          else
+            echo "Build failed - no dist folder"
+            exit 1
+          fi
+
+  # Job 2: Deploy to production VPS
+  deploy:
+    name: Deploy to VPS
+    needs: build-and-verify
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -e
+
+            echo "Starting deployment..."
+            cd /opt/beacon
+
+            # Pull latest changes
+            echo "Pulling latest code..."
+            git pull origin main
+
+            # Rebuild and restart backend container
+            echo "Rebuilding backend container..."
+            docker-compose up -d --build backend
+
+            # Wait for container to start
+            echo "Waiting for container to start..."
+            sleep 15
+
+            # Verify deployment with health check
+            echo "Running health check..."
+            if curl -sf http://localhost:3001/api/health > /dev/null; then
+              echo "Deployment successful!"
+            else
+              echo "Health check failed. Checking logs..."
+              docker-compose logs --tail=50 backend
+              exit 1
+            fi
+
+      - name: Notify on failure
+        if: failure()
+        run: echo "Deployment failed! Check the logs above."
