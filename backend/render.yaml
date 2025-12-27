@@ -6,7 +6,7 @@ services:
     env: node
     region: oregon
     plan: free # or starter/standard for production
-    buildCommand: npm install && npx prisma generate && npm run build
+    buildCommand: npm ci && npx prisma generate && npm run build
     startCommand: npx prisma migrate deploy && npm start
     envVars:
       - key: NODE_ENV
