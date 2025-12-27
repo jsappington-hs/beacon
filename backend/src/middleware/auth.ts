@@ -7,6 +7,7 @@ export interface AuthRequest extends Request {
     id: string;
     email: string;
     role: UserRole;
+    organizationId: string;
   };
 }
 
@@ -27,6 +28,7 @@ export const authenticateToken = (
       id: string;
       email: string;
       role: UserRole;
+      organizationId: string;
     };
     req.user = decoded;
     next();

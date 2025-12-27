@@ -1,12 +1,24 @@
 // User types
 export type UserRole = 'EMPLOYEE' | 'MANAGER' | 'HR_ADMIN' | 'SUPER_ADMIN';
 
+// Organization type for multi-tenancy
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  logo?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface User {
   id: string;
   email: string;
   name: string;
   title?: string;
   role: UserRole;
+  organizationId?: string;
   managerId?: string;
   departmentId?: string;
   hireDate?: string;
@@ -20,6 +32,8 @@ export interface User {
   lastLoginAt?: string;
   createdAt: string;
   updatedAt: string;
+  // Relations
+  organization?: Organization;
 }
 
 export interface Department {
@@ -213,11 +227,19 @@ export interface DevelopmentPlan {
 export interface AuthResponse {
   token: string;
   user: User;
+  organization?: Organization;
 }
 
 export interface LoginCredentials {
   email: string;
   password: string;
+}
+
+export interface RegisterOrganizationData {
+  organizationName: string;
+  adminEmail: string;
+  adminName: string;
+  adminPassword: string;
 }
 
 // Admin types

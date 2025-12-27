@@ -20,6 +20,7 @@ router.post('/login', async (req: Request, res: Response) => {
       include: {
         department: true,
         manager: { select: { id: true, name: true, email: true } },
+        organization: true,
       },
     });
 
@@ -31,6 +32,10 @@ router.post('/login', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Password not set for this user' });
     }
 
+    if (!user.organizationId) {
+      return res.status(401).json({ error: 'User is not associated with an organization' });
+    }
+
     // Validate password
     const isValidPassword = await bcrypt.compare(password, user.password);
 
@@ -38,9 +43,9 @@ router.post('/login', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Generate JWT token
+    // Generate JWT token with organizationId
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { id: user.id, email: user.email, role: user.role, organizationId: user.organizationId },
       process.env.JWT_SECRET!,
       { expiresIn: '7d' }
     );
@@ -53,9 +58,11 @@ router.post('/login', async (req: Request, res: Response) => {
         name: user.name,
         title: user.title,
         role: user.role,
+        organizationId: user.organizationId,
         department: user.department,
         manager: user.manager,
       },
+      organization: user.organization,
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -72,6 +79,7 @@ router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => 
         department: true,
         manager: { select: { id: true, name: true, email: true } },
         directReports: { select: { id: true, name: true, email: true, title: true } },
+        organization: true,
       },
     });
 
@@ -85,9 +93,11 @@ router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => 
       name: user.name,
       title: user.title,
       role: user.role,
+      organizationId: user.organizationId,
       department: user.department,
       manager: user.manager,
       directReports: user.directReports,
+      organization: user.organization,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     });

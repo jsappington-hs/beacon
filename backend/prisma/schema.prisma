@@ -7,6 +7,27 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Multi-tenancy: Organization model
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  logo      String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  users          User[]
+  departments    Department[]
+  reviewCycles   ReviewCycle[]
+  goals          Goal[]
+  goalTemplates  GoalTemplate[]
+  systemSettings SystemSettings[]
+  integrations   Integration[]
+  auditLogs      AuditLog[]
+}
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -15,6 +36,10 @@ model User {
   title     String?
   role      String   @default("EMPLOYEE") // EMPLOYEE, MANAGER, HR_ADMIN, SUPER_ADMIN
   hireDate  DateTime?
+
+  // Multi-tenancy
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   // Profile information
   profilePicture String?  // URL path to uploaded profile image
@@ -60,6 +85,10 @@ model Department {
   id        String   @id @default(uuid())
   name      String
 
+  // Multi-tenancy
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
   parentDepartmentId String?
   parentDepartment   Department? @relation("DepartmentHierarchy", fields: [parentDepartmentId], references: [id], onDelete: SetNull)
   subDepartments     Department[] @relation("DepartmentHierarchy")
@@ -77,6 +106,10 @@ model ReviewCycle {
   startDate DateTime
   endDate   DateTime
   status    String   @default("active")
+
+  // Multi-tenancy
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   reviews   Review[]
 
@@ -153,6 +186,10 @@ model Goal {
   ownerId     String
   owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
+  // Multi-tenancy
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
   // Goal hierarchy (OKR alignment)
   parentGoalId String?
   parentGoal   Goal?    @relation("GoalAlignment", fields: [parentGoalId], references: [id], onDelete: SetNull)
@@ -176,6 +213,10 @@ model Goal {
 
 model GoalTemplate {
   id          String   @id @default(uuid())
+
+  // Multi-tenancy
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   title       String
   description String
@@ -324,17 +365,27 @@ model UserOAuthToken {
 
 model SystemSettings {
   id        String   @id @default(uuid())
+
+  // Multi-tenancy
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
   category  String   // 'review', 'notifications', 'company', 'features'
   settings  String   // JSON object with settings
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([category])
+  @@unique([organizationId, category])
 }
 
 model Integration {
   id           String   @id @default(uuid())
-  type         String   @unique // 'gusto', 'google_calendar', 'hris'
+
+  // Multi-tenancy
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  type         String   // 'gusto', 'google_calendar', 'hris'
   isConnected  Boolean  @default(false)
   config       String?  // Encrypted JSON with credentials
   lastSyncAt   DateTime?
@@ -342,10 +393,17 @@ model Integration {
   syncError    String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  @@unique([organizationId, type])
 }
 
 model AuditLog {
   id           String   @id @default(uuid())
+
+  // Multi-tenancy
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
   userId       String?
   user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   action       String   // 'CREATE', 'UPDATE', 'DELETE'
@@ -358,6 +416,7 @@ model AuditLog {
   description  String?  // Human-readable description
   createdAt    DateTime @default(now())
 
+  @@index([organizationId])
   @@index([userId])
   @@index([resourceType])
   @@index([createdAt])

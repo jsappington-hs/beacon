@@ -11,7 +11,10 @@ router.get('/my-goals', authenticateToken, async (req: AuthRequest, res) => {
     const userId = req.user!.id;
 
     const goals = await prisma.goal.findMany({
-      where: { ownerId: userId },
+      where: {
+        ownerId: userId,
+        organizationId: req.user!.organizationId,
+      },
       include: {
         owner: { select: { id: true, name: true, email: true } },
         parentGoal: {
@@ -77,7 +80,10 @@ router.get('/user/:userId', authenticateToken, async (req: AuthRequest, res) => 
 router.get('/company', authenticateToken, async (req: AuthRequest, res) => {
   try {
     const goals = await prisma.goal.findMany({
-      where: { visibility: GoalVisibility.COMPANY },
+      where: {
+        visibility: GoalVisibility.COMPANY,
+        organizationId: req.user!.organizationId,
+      },
       include: {
         owner: { select: { id: true, name: true, email: true, title: true } },
         childGoals: {
@@ -173,6 +179,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
         status: status || GoalStatus.DRAFT,
         visibility: visibility || GoalVisibility.PRIVATE,
         parentGoalId,
+        organizationId: req.user!.organizationId,
       },
       include: {
         owner: { select: { id: true, name: true, email: true } },
@@ -200,6 +207,14 @@ router.patch('/:id', authenticateToken, async (req: AuthRequest, res) => {
     if (!goal) {
       return res.status(404).json({ error: 'Goal not found' });
     }
+
+    // Verify goal belongs to same organization
+    if (goal.organizationId !== req.user!.organizationId) {
+      return res.status(404).json({ error: 'Goal not found' });
+    }
+
+    // Prevent changing organizationId
+    delete updates.organizationId;
 
     // Only owner or HR/Admin can update
     if (

@@ -11,6 +11,7 @@ const router = Router();
 router.get('/', authenticateToken, async (req: AuthRequest, res) => {
   try {
     const departments = await prisma.department.findMany({
+      where: { organizationId: req.user!.organizationId },
       include: {
         parentDepartment: {
           select: { id: true, name: true },
@@ -34,9 +35,12 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
 // Get department hierarchy tree
 router.get('/tree', authenticateToken, async (req: AuthRequest, res) => {
   try {
-    // Get root departments (no parent)
+    // Get root departments (no parent) scoped to organization
     const rootDepartments = await prisma.department.findMany({
-      where: { parentDepartmentId: null },
+      where: {
+        parentDepartmentId: null,
+        organizationId: req.user!.organizationId,
+      },
       include: {
         subDepartments: {
           include: {
@@ -80,6 +84,11 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'Department not found' });
     }
 
+    // Verify department belongs to same organization
+    if (department.organizationId !== req.user!.organizationId) {
+      return res.status(404).json({ error: 'Department not found' });
+    }
+
     res.json(department);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch department' });
@@ -100,6 +109,7 @@ router.post(
         data: {
           name,
           parentDepartmentId,
+          organizationId: req.user!.organizationId,
         },
         include: {
           parentDepartment: {
@@ -126,6 +136,15 @@ router.patch(
     try {
       const { id } = req.params;
       const updates = req.body;
+
+      // Verify department belongs to same organization
+      const existing = await prisma.department.findUnique({ where: { id } });
+      if (!existing || existing.organizationId !== req.user!.organizationId) {
+        return res.status(404).json({ error: 'Department not found' });
+      }
+
+      // Prevent changing organizationId
+      delete updates.organizationId;
 
       const department = await prisma.department.update({
         where: { id },
@@ -165,6 +184,11 @@ router.delete(
       });
 
       if (!department) {
+        return res.status(404).json({ error: 'Department not found' });
+      }
+
+      // Verify department belongs to same organization
+      if (department.organizationId !== req.user!.organizationId) {
         return res.status(404).json({ error: 'Department not found' });
       }
 

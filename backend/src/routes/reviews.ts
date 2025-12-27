@@ -12,6 +12,7 @@ const router = Router();
 router.get('/cycles', authenticateToken, async (req: AuthRequest, res) => {
   try {
     const cycles = await prisma.reviewCycle.findMany({
+      where: { organizationId: req.user!.organizationId },
       orderBy: { startDate: 'desc' },
     });
     res.json(cycles);
@@ -40,6 +41,11 @@ router.get('/cycles/:id', authenticateToken, async (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'Review cycle not found' });
     }
 
+    // Verify cycle belongs to same organization
+    if (cycle.organizationId !== req.user!.organizationId) {
+      return res.status(404).json({ error: 'Review cycle not found' });
+    }
+
     res.json(cycle);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch review cycle' });
@@ -61,6 +67,7 @@ router.post(
           type,
           startDate: new Date(startDate),
           endDate: new Date(endDate),
+          organizationId: req.user!.organizationId,
         },
       });
 
@@ -81,8 +88,15 @@ router.patch(
       const { id } = req.params;
       const updates = req.body;
 
+      // Verify cycle belongs to same organization
+      const existing = await prisma.reviewCycle.findUnique({ where: { id } });
+      if (!existing || existing.organizationId !== req.user!.organizationId) {
+        return res.status(404).json({ error: 'Review cycle not found' });
+      }
+
       if (updates.startDate) updates.startDate = new Date(updates.startDate);
       if (updates.endDate) updates.endDate = new Date(updates.endDate);
+      delete updates.organizationId;
 
       const cycle = await prisma.reviewCycle.update({
         where: { id },
@@ -108,7 +122,11 @@ router.get('/all-reviews', authenticateToken, async (req: AuthRequest, res) => {
       return res.status(403).json({ error: 'Access denied. HR Admin role required.' });
     }
 
+    // Filter by organization through the cycle
     const reviews = await prisma.review.findMany({
+      where: {
+        cycle: { organizationId: req.user!.organizationId },
+      },
       include: {
         reviewee: { select: { id: true, name: true, email: true, title: true } },
         reviewer: { select: { id: true, name: true, email: true, title: true } },
@@ -251,9 +269,12 @@ router.post(
         return res.status(400).json({ error: 'Cycle ID and employee IDs are required' });
       }
 
-      // Get employees with their managers
+      // Get employees with their managers (scoped to organization)
       const employees = await prisma.user.findMany({
-        where: { id: { in: employeeIds } },
+        where: {
+          id: { in: employeeIds },
+          organizationId: req.user!.organizationId,
+        },
         select: { id: true, name: true, email: true, managerId: true },
       });
 

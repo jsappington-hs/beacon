@@ -1,9 +1,10 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { auth } from '../lib/api';
-import type { User, LoginCredentials } from '../types';
+import type { User, LoginCredentials, Organization } from '../types';
 
 interface AuthContextType {
   user: User | null;
+  organization: Organization | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
@@ -15,6 +16,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [organization, setOrganization] = useState<Organization | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -22,7 +24,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (token) {
       auth
         .getCurrentUser()
-        .then((user) => setUser(user))
+        .then((userData) => {
+          setUser(userData);
+          if (userData.organization) {
+            setOrganization(userData.organization);
+          }
+        })
         .catch(() => {
           localStorage.removeItem('auth_token');
         })
@@ -36,11 +43,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const response = await auth.login(credentials);
     localStorage.setItem('auth_token', response.token);
     setUser(response.user);
+    if (response.organization) {
+      setOrganization(response.organization);
+    }
   };
 
   const logout = () => {
     localStorage.removeItem('auth_token');
     setUser(null);
+    setOrganization(null);
     window.location.href = '/login';
   };
 
@@ -48,6 +59,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const userData = await auth.getCurrentUser();
       setUser(userData);
+      if (userData.organization) {
+        setOrganization(userData.organization);
+      }
     } catch (error) {
       console.error('Failed to refresh user:', error);
     }
@@ -57,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
+        organization,
         isLoading,
         isAuthenticated: !!user,
         login,

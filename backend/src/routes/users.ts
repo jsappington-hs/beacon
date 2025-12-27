@@ -15,6 +15,7 @@ router.get(
   async (req: AuthRequest, res) => {
     try {
       const users = await prisma.user.findMany({
+        where: { organizationId: req.user!.organizationId },
         include: {
           department: true,
           manager: {
@@ -35,7 +36,7 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res) => {
     const { id } = req.params;
 
     // Users can view their own profile or their direct reports
-    // HR/Admins can view anyone
+    // HR/Admins can view anyone in their org
     const user = await prisma.user.findUnique({
       where: { id },
       include: {
@@ -49,6 +50,11 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    // Verify user belongs to same organization
+    if (user.organizationId !== req.user!.organizationId) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
     res.json(user);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch user' });
@@ -58,8 +64,9 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res) => {
 // Get org chart
 router.get('/org/chart', authenticateToken, async (req: AuthRequest, res) => {
   try {
-    // Get all users with their reporting relationships
+    // Get all users with their reporting relationships (scoped to organization)
     const users = await prisma.user.findMany({
+      where: { organizationId: req.user!.organizationId },
       include: {
         directReports: {
           select: { id: true, name: true, title: true },
@@ -83,7 +90,10 @@ router.get('/:id/reports', authenticateToken, async (req: AuthRequest, res) => {
     const { id } = req.params;
 
     const reports = await prisma.user.findMany({
-      where: { managerId: id },
+      where: {
+        managerId: id,
+        organizationId: req.user!.organizationId,
+      },
       include: {
         department: true,
       },
@@ -114,6 +124,7 @@ router.post(
           managerId,
           departmentId,
           hireDate: hireDate ? new Date(hireDate) : null,
+          organizationId: req.user!.organizationId,
         },
       });
 
@@ -135,6 +146,15 @@ router.patch(
     try {
       const { id } = req.params;
       const updates = req.body;
+
+      // Verify user belongs to same organization
+      const existingUser = await prisma.user.findUnique({ where: { id } });
+      if (!existingUser || existingUser.organizationId !== req.user!.organizationId) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Prevent changing organizationId
+      delete updates.organizationId;
 
       const user = await prisma.user.update({
         where: { id },
