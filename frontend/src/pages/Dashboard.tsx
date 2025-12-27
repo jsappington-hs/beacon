@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Target, ClipboardList, Users, TrendingUp, Building2, Settings, CheckCircle, AlertCircle, Clock, UsersRound } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { manager } from '../lib/api';
+import OnboardingChecklist from '../components/OnboardingChecklist';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -110,7 +111,7 @@ export default function Dashboard() {
   return (
     <div style={{ padding: '48px' }}>
       {/* Header */}
-      <div style={{ marginBottom: '48px' }}>
+      <div style={{ marginBottom: '32px' }}>
         <h1 style={{ fontSize: '32px', fontWeight: '600', color: '#111827', marginBottom: '8px', letterSpacing: '-0.5px' }}>
           Welcome back, {user?.name}
         </h1>
@@ -118,6 +119,9 @@ export default function Dashboard() {
           {user?.title && `${user.title}`}
         </p>
       </div>
+
+      {/* Onboarding Checklist */}
+      {user?.role && <OnboardingChecklist userRole={user.role} />}
 
       {/* Main Navigation Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px', marginBottom: '48px', maxWidth: '100%' }}>
