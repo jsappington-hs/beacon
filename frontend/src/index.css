@@ -427,6 +427,57 @@ body {
   .performance-summary-grid {
     grid-template-columns: 1fr !important;
   }
+
+  /* One-on-Ones page mobile styles */
+  .one-on-one-actions {
+    width: 100%;
+  }
+
+  .one-on-one-actions button {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 12px !important;
+    font-size: 13px !important;
+  }
+
+  .one-on-one-actions button svg {
+    display: none;
+  }
+
+  .calendar-connect-banner {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    text-align: center;
+  }
+
+  .calendar-connect-banner > div {
+    justify-content: center;
+  }
+
+  .calendar-connect-banner button {
+    width: 100%;
+  }
+
+  .one-on-one-tabs button {
+    padding: 10px 16px !important;
+    font-size: 13px !important;
+  }
+
+  .one-on-one-card {
+    padding: 16px !important;
+  }
+
+  .one-on-one-card-header {
+    flex-direction: column !important;
+  }
+
+  .one-on-one-card-header > div:last-child {
+    align-self: flex-start;
+  }
+
+  .one-on-one-card h3 {
+    font-size: 16px !important;
+  }
 }
 
 /* Tablet and up */

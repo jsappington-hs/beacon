@@ -203,6 +203,7 @@ export default function OneOnOnes() {
     return (
       <div
         key={meeting.id}
+        className="one-on-one-card"
         onClick={() => navigate(`/one-on-ones/${meeting.id}`)}
         style={{
           border: '1px solid #e5e7eb',
@@ -222,7 +223,7 @@ export default function OneOnOnes() {
           e.currentTarget.style.boxShadow = 'none';
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
+        <div className="one-on-one-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px', gap: '12px', flexWrap: 'wrap' }}>
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
               <h3 style={{ margin: 0 }}>
@@ -312,13 +313,13 @@ export default function OneOnOnes() {
 
   return (
     <div style={{ padding: '48px' }}>
-      <div style={{ marginBottom: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="page-header-with-action" style={{ marginBottom: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap' }}>
         <div>
           <h1 style={{ fontSize: '32px', marginBottom: '8px' }}>One-on-One Meetings</h1>
           <p style={{ fontSize: '16px', color: '#666', margin: 0 }}>Manage your 1:1 meetings and action items</p>
         </div>
         {(user?.role === 'MANAGER' || user?.role === 'HR_ADMIN' || user?.role === 'SUPER_ADMIN') && (
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div className="one-on-one-actions" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <button
               onClick={() => {
                 setShowScheduleModal(true);
@@ -392,6 +393,7 @@ export default function OneOnOnes() {
 
       {!calendarConnected && (user?.role === 'MANAGER' || user?.role === 'HR_ADMIN' || user?.role === 'SUPER_ADMIN') && (
         <div
+          className="calendar-connect-banner"
           style={{
             padding: '16px 20px',
             background: '#eff6ff',
@@ -401,6 +403,8 @@ export default function OneOnOnes() {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            gap: '16px',
+            flexWrap: 'wrap',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -434,7 +438,7 @@ export default function OneOnOnes() {
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', borderBottom: '1px solid #e5e7eb' }}>
+      <div className="one-on-one-tabs" style={{ display: 'flex', gap: '8px', marginBottom: '24px', borderBottom: '1px solid #e5e7eb' }}>
         <button
           onClick={() => setActiveTab('upcoming')}
           style={{
@@ -502,6 +506,7 @@ export default function OneOnOnes() {
           onClick={() => setShowScheduleModal(false)}
         >
           <div
+            className="modal-content"
             style={{
               background: '#ffffff',
               borderRadius: '12px',
@@ -514,7 +519,7 @@ export default function OneOnOnes() {
             onClick={(e) => e.stopPropagation()}
           >
             <h2 style={{ marginTop: 0, marginBottom: '24px', fontSize: '24px' }}>
-              Schedule One-on-One Meeting
+              Schedule Meeting
             </h2>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -646,6 +651,7 @@ export default function OneOnOnes() {
 
             {/* Actions */}
             <div
+              className="modal-actions"
               style={{
                 marginTop: '24px',
                 display: 'flex',
@@ -716,6 +722,7 @@ export default function OneOnOnes() {
           onClick={() => setShowImportModal(false)}
         >
           <div
+            className="modal-content"
             style={{
               background: '#ffffff',
               borderRadius: '12px',
@@ -728,7 +735,7 @@ export default function OneOnOnes() {
             onClick={(e) => e.stopPropagation()}
           >
             <h2 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: '600', color: '#111827' }}>
-              Import from Google Calendar
+              Import from Calendar
             </h2>
             <p style={{ margin: '0 0 24px 0', fontSize: '14px', color: '#6b7280' }}>
               Select calendar events to convert into one-on-ones
