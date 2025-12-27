@@ -3,29 +3,31 @@ import { Link } from 'react-router-dom';
 export default function Landing() {
   return (
     <div style={{
-      height: '100vh',
-      width: '100vw',
+      minHeight: '100vh',
+      width: '100%',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
       textAlign: 'center',
-      padding: '40px',
-      position: 'relative',
+      padding: 'clamp(20px, 5vw, 40px)',
+      paddingTop: 'clamp(80px, 15vw, 120px)',
+      boxSizing: 'border-box',
+      overflowX: 'hidden',
     }}>
       {/* Logo in top left */}
       <div style={{
         position: 'absolute',
-        top: '40px',
-        left: '40px',
+        top: 'clamp(16px, 4vw, 40px)',
+        left: 'clamp(16px, 4vw, 40px)',
         display: 'flex',
         alignItems: 'center',
-        gap: '12px'
+        gap: '10px'
       }}>
         <div style={{
-          width: '40px',
-          height: '40px',
+          width: 'clamp(32px, 8vw, 40px)',
+          height: 'clamp(32px, 8vw, 40px)',
           background: 'white',
           borderRadius: '8px',
           display: 'flex',
@@ -33,28 +35,41 @@ export default function Landing() {
           justifyContent: 'center',
           fontWeight: '700',
           color: '#667eea',
-          fontSize: '20px'
+          fontSize: 'clamp(16px, 4vw, 20px)'
         }}>
           B
         </div>
-        <h1 style={{ color: 'white', fontSize: '24px', fontWeight: '700', margin: 0 }}>Beacon</h1>
+        <h1 style={{
+          color: 'white',
+          fontSize: 'clamp(18px, 5vw, 24px)',
+          fontWeight: '700',
+          margin: 0
+        }}>
+          Beacon
+        </h1>
       </div>
 
       {/* Hero Content */}
-      <div style={{ maxWidth: '900px' }}>
+      <div style={{
+        maxWidth: '900px',
+        width: '100%',
+        padding: '0 clamp(8px, 2vw, 20px)',
+        boxSizing: 'border-box',
+      }}>
         <h2 style={{
-          fontSize: '72px',
+          fontSize: 'clamp(28px, 8vw, 72px)',
           fontWeight: '800',
           color: 'white',
-          margin: '0 0 32px 0',
+          margin: '0 0 clamp(16px, 4vw, 32px) 0',
           lineHeight: '1.1',
+          wordWrap: 'break-word',
         }}>
-          Performance Management<br />That Actually Works
+          Performance Management That Actually Works
         </h2>
         <p style={{
-          fontSize: '24px',
+          fontSize: 'clamp(16px, 4vw, 24px)',
           color: 'rgba(255, 255, 255, 0.95)',
-          margin: '0 0 56px 0',
+          margin: '0 0 clamp(32px, 6vw, 56px) 0',
           lineHeight: '1.5',
         }}>
           Empower your team with continuous feedback, goal alignment, and meaningful development conversations.
@@ -63,13 +78,13 @@ export default function Landing() {
           to="/login"
           style={{
             display: 'inline-block',
-            padding: '20px 56px',
+            padding: 'clamp(14px, 3vw, 20px) clamp(32px, 8vw, 56px)',
             background: 'white',
             color: '#667eea',
             borderRadius: '12px',
             textDecoration: 'none',
             fontWeight: '700',
-            fontSize: '20px',
+            fontSize: 'clamp(16px, 4vw, 20px)',
             boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
             transition: 'transform 0.2s',
           }}
