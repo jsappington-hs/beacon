@@ -25,7 +25,9 @@ router.get(
   requireRole([UserRole.HR_ADMIN, UserRole.SUPER_ADMIN]),
   async (req: AuthRequest, res) => {
     try {
-      const settings = await prisma.systemSettings.findMany();
+      const settings = await prisma.systemSettings.findMany({
+        where: { organizationId: req.user!.organizationId }
+      });
 
       const settingsObj: Record<string, any> = {};
       settings.forEach(s => {
@@ -57,7 +59,12 @@ router.get(
       const { category } = req.params;
 
       const setting = await prisma.systemSettings.findUnique({
-        where: { category }
+        where: {
+          organizationId_category: {
+            organizationId: req.user!.organizationId,
+            category
+          }
+        }
       });
 
       if (!setting) {
@@ -94,13 +101,27 @@ router.patch(
       }
 
       const existing = await prisma.systemSettings.findUnique({
-        where: { category }
+        where: {
+          organizationId_category: {
+            organizationId: req.user!.organizationId,
+            category
+          }
+        }
       });
 
       const updated = await prisma.systemSettings.upsert({
-        where: { category },
+        where: {
+          organizationId_category: {
+            organizationId: req.user!.organizationId,
+            category
+          }
+        },
         update: { settings: JSON.stringify(settings) },
-        create: { category, settings: JSON.stringify(settings) }
+        create: {
+          category,
+          settings: JSON.stringify(settings),
+          organizationId: req.user!.organizationId
+        }
       });
 
       await createAuditLog({
@@ -147,6 +168,11 @@ router.patch(
         return res.status(404).json({ error: 'User not found' });
       }
 
+      // Verify user belongs to same organization
+      if (before.organizationId !== req.user!.organizationId) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
       const user = await prisma.user.update({
         where: { id },
         data: { isActive: false }
@@ -182,6 +208,12 @@ router.patch(
   async (req: AuthRequest, res) => {
     try {
       const { id } = req.params;
+
+      // Verify user belongs to same organization
+      const existing = await prisma.user.findUnique({ where: { id } });
+      if (!existing || existing.organizationId !== req.user!.organizationId) {
+        return res.status(404).json({ error: 'User not found' });
+      }
 
       const user = await prisma.user.update({
         where: { id },
@@ -247,22 +279,28 @@ router.post(
             continue;
           }
 
-          // Lookup manager by email if provided
+          // Lookup manager by email if provided (within same org)
           let managerId = null;
           if (record.manager) {
-            const manager = await prisma.user.findUnique({
-              where: { email: record.manager }
+            const manager = await prisma.user.findFirst({
+              where: {
+                email: record.manager,
+                organizationId: req.user!.organizationId
+              }
             });
             if (manager) {
               managerId = manager.id;
             }
           }
 
-          // Lookup department by name if provided
+          // Lookup department by name if provided (within same org)
           let departmentId = null;
           if (record.department) {
             const department = await prisma.department.findFirst({
-              where: { name: record.department }
+              where: {
+                name: record.department,
+                organizationId: req.user!.organizationId
+              }
             });
             if (department) {
               departmentId = department.id;
@@ -290,7 +328,8 @@ router.post(
               managerId,
               departmentId,
               hireDate: record.hireDate ? new Date(record.hireDate) : null,
-              isActive: true
+              isActive: true,
+              organizationId: req.user!.organizationId
             }
           });
 
@@ -332,7 +371,9 @@ router.get(
   requireRole([UserRole.HR_ADMIN, UserRole.SUPER_ADMIN]),
   async (req: AuthRequest, res) => {
     try {
-      const integrations = await prisma.integration.findMany();
+      const integrations = await prisma.integration.findMany({
+        where: { organizationId: req.user!.organizationId }
+      });
 
       // Don't expose config to non-super-admins
       const response = integrations.map(i => ({
@@ -367,7 +408,12 @@ router.get(
       const { type } = req.params;
 
       const integration = await prisma.integration.findUnique({
-        where: { type }
+        where: {
+          organizationId_type: {
+            organizationId: req.user!.organizationId,
+            type
+          }
+        }
       });
 
       if (!integration) {
@@ -416,7 +462,12 @@ router.patch(
       const encryptedConfig = encrypt(JSON.stringify(config));
 
       const integration = await prisma.integration.upsert({
-        where: { type },
+        where: {
+          organizationId_type: {
+            organizationId: req.user!.organizationId,
+            type
+          }
+        },
         update: {
           config: encryptedConfig,
           isConnected: true
@@ -424,7 +475,8 @@ router.patch(
         create: {
           type,
           config: encryptedConfig,
-          isConnected: true
+          isConnected: true,
+          organizationId: req.user!.organizationId
         }
       });
 
@@ -465,7 +517,12 @@ router.post(
       const { type } = req.params;
 
       const integration = await prisma.integration.update({
-        where: { type },
+        where: {
+          organizationId_type: {
+            organizationId: req.user!.organizationId,
+            type
+          }
+        },
         data: {
           isConnected: false,
           config: null
@@ -516,9 +573,11 @@ router.get(
         offset = '0'
       } = req.query;
 
-      const where: any = {};
+      const where: any = {
+        organizationId: req.user!.organizationId
+      };
 
-      // HR_ADMIN can only see their own team's logs, SUPER_ADMIN sees all
+      // HR_ADMIN can only see their own team's logs, SUPER_ADMIN sees all within org
       if (req.user!.role === UserRole.HR_ADMIN) {
         // For HR_ADMIN, limit to their actions and their team's actions
         // This would need to be expanded to include their reports
@@ -631,7 +690,9 @@ router.post(
     try {
       const { userId, action, resourceType, startDate, endDate, format = 'csv' } = req.body;
 
-      const where: any = {};
+      const where: any = {
+        organizationId: req.user!.organizationId
+      };
       if (userId) where.userId = userId;
       if (action) where.action = action;
       if (resourceType) where.resourceType = resourceType;
