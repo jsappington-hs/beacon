@@ -26,6 +26,7 @@ model Organization {
   systemSettings SystemSettings[]
   integrations   Integration[]
   auditLogs      AuditLog[]
+  invitations    Invitation[]
 }
 
 model User {
@@ -79,6 +80,8 @@ model User {
   goalComments GoalComment[]
   oauthTokens       UserOAuthToken[]
   auditLogs        AuditLog[]
+  passwordResetTokens PasswordResetToken[]
+  invitationsSent  Invitation[]
 }
 
 model Department {
@@ -422,4 +425,36 @@ model AuditLog {
   @@index([createdAt])
   @@index([action])
   @@index([status])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
+}
+
+model Invitation {
+  id             String   @id @default(uuid())
+  token          String   @unique
+  email          String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedById    String
+  invitedBy      User     @relation(fields: [invitedById], references: [id], onDelete: Cascade)
+  role           String   @default("EMPLOYEE")
+  status         String   @default("PENDING") // PENDING, ACCEPTED, EXPIRED
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  createdAt      DateTime @default(now())
+
+  @@index([token])
+  @@index([email])
+  @@index([organizationId])
 }

@@ -165,6 +165,20 @@ export default function Login() {
               onFocus={(e) => e.currentTarget.style.borderColor = '#667eea'}
               onBlur={(e) => e.currentTarget.style.borderColor = '#e5e7eb'}
             />
+            <div style={{ textAlign: 'right', marginTop: '8px' }}>
+              <Link
+                to="/forgot-password"
+                style={{
+                  fontSize: '14px',
+                  color: '#667eea',
+                  textDecoration: 'none',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+              >
+                Forgot password?
+              </Link>
+            </div>
           </div>
 
           {error && (

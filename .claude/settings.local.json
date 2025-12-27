@@ -19,7 +19,8 @@
       "Bash(ssh:*)",
       "Bash(npx prisma migrate:*)",
       "Bash(grep:*)",
-      "Bash(xargs cat:*)"
+      "Bash(xargs cat:*)",
+      "Bash(npx prisma generate:*)"
     ]
   }
 }
