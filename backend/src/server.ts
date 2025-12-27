@@ -1,10 +1,29 @@
-import express, { Request, Response } from 'express';
+import * as Sentry from '@sentry/node';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+
+// Load environment variables first
+dotenv.config();
+
+// Initialize Sentry for error tracking (if DSN is configured)
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'development',
+    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+    integrations: [
+      Sentry.httpIntegration(),
+      Sentry.expressIntegration(),
+    ],
+  });
+  console.log('Sentry error tracking initialized');
+}
+
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
 import departmentRoutes from './routes/departments';
@@ -20,8 +39,6 @@ import adminRoutes from './routes/admin';
 import onboardingRoutes from './routes/onboarding';
 import { authenticateToken } from './middleware/auth';
 import { PrismaClient } from '@prisma/client';
-
-dotenv.config();
 
 // Validate required environment variables at startup
 const requiredEnvVars = ['JWT_SECRET', 'DATABASE_URL'];
@@ -97,6 +114,23 @@ async function autoSeedIfEmpty() {
     console.error('⚠️ Error checking/seeding database:', error);
   }
 }
+
+// Global error handler - must be after all routes
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
+  // Log to Sentry if configured
+  if (process.env.SENTRY_DSN) {
+    Sentry.captureException(err);
+  }
+
+  console.error('Unhandled error:', err);
+
+  // Don't expose internal errors in production
+  const message = process.env.NODE_ENV === 'production'
+    ? 'Internal server error'
+    : err.message;
+
+  res.status(500).json({ error: message });
+});
 
 app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);

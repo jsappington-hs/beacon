@@ -23,6 +23,7 @@
   "type": "commonjs",
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "@sentry/node": "^10.32.1",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "csv-parse": "^6.1.0",
