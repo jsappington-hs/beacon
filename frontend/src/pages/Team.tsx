@@ -97,7 +97,7 @@ export default function Team() {
 
       {/* Team Stats Cards */}
       {isManager && teamStats && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+        <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '32px' }}>
           <div
             style={{
               background: '#ffffff',
@@ -266,7 +266,7 @@ export default function Team() {
             Team Members ({filteredEmployees.length})
           </h2>
         </div>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
               <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -313,7 +313,7 @@ export default function Team() {
                     e.currentTarget.style.background = 'transparent';
                   }}
                 >
-                  <td style={{ padding: '16px' }}>
+                  <td data-label="Name" style={{ padding: '16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <Avatar user={employee} size="md" />
                       <div>
@@ -323,10 +323,10 @@ export default function Team() {
                       </div>
                     </div>
                   </td>
-                  <td style={{ padding: '16px', fontSize: '14px', color: '#374151' }}>
+                  <td data-label="Title" style={{ padding: '16px', fontSize: '14px', color: '#374151' }}>
                     {employee.title || '—'}
                   </td>
-                  <td style={{ padding: '16px', fontSize: '14px', color: '#374151' }}>
+                  <td data-label="Department" style={{ padding: '16px', fontSize: '14px', color: '#374151' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       {(employee as any).department && (
                         <>
@@ -337,16 +337,16 @@ export default function Team() {
                       {!(employee as any).department && '—'}
                     </div>
                   </td>
-                  <td style={{ padding: '16px', fontSize: '14px', color: '#374151' }}>
+                  <td data-label="Manager" style={{ padding: '16px', fontSize: '14px', color: '#374151' }}>
                     {(employee as any).manager?.name || '—'}
                   </td>
-                  <td style={{ padding: '16px', fontSize: '14px', color: '#374151' }}>
+                  <td data-label="Email" style={{ padding: '16px', fontSize: '14px', color: '#374151' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Mail size={14} color="#6b7280" />
                       {employee.email}
                     </div>
                   </td>
-                  <td style={{ padding: '16px' }}>
+                  <td data-label="Role" style={{ padding: '16px' }}>
                     <span
                       style={{
                         padding: '4px 10px',

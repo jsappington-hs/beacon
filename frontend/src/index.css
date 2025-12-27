@@ -78,6 +78,55 @@ body {
     padding: 16px !important;
     padding-top: 8px !important;
   }
+
+  /* Mobile table -> cards conversion */
+  .responsive-table thead {
+    display: none;
+  }
+
+  .responsive-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .responsive-table tr {
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 12px;
+    padding: 16px;
+    gap: 8px;
+  }
+
+  .responsive-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0 !important;
+    border: none !important;
+  }
+
+  .responsive-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    font-size: 12px;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Hide email on mobile cards for cleaner look */
+  .responsive-table td[data-label="Email"] {
+    display: none;
+  }
+
+  /* Stats cards grid */
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 /* Tablet and up */
