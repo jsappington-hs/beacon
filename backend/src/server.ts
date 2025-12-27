@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import dotenv from 'dotenv';
 import path from 'path';
 import { exec } from 'child_process';
@@ -22,11 +23,30 @@ import { PrismaClient } from '@prisma/client';
 
 dotenv.config();
 
+// Validate required environment variables at startup
+const requiredEnvVars = ['JWT_SECRET', 'DATABASE_URL'];
+for (const envVar of requiredEnvVars) {
+  if (!process.env[envVar]) {
+    throw new Error(`CRITICAL: ${envVar} environment variable is required but not set`);
+  }
+}
+
+// Validate FRONTEND_URL format if set
+if (process.env.FRONTEND_URL && !/^https?:\/\/.+/.test(process.env.FRONTEND_URL)) {
+  throw new Error('CRITICAL: FRONTEND_URL must be a valid URL starting with http:// or https://');
+}
+
 const execAsync = promisify(exec);
 const prisma = new PrismaClient();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: false, // Handled by nginx for frontend
+  crossOriginEmbedderPolicy: false, // Allow embedding for API
+}));
 
 // CORS configuration
 const corsOptions = {
@@ -34,7 +54,10 @@ const corsOptions = {
   credentials: true,
 };
 app.use(cors(corsOptions));
-app.use(express.json());
+
+// Body parser with size limit to prevent DoS
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Serve uploaded files (with authentication)
 app.use('/uploads', authenticateToken, express.static(path.join(__dirname, '../uploads')));

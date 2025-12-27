@@ -17,6 +17,7 @@ router.get(
       const templates = await prisma.goalTemplate.findMany({
         where: {
           isActive: true,
+          organizationId: req.user!.organizationId,
           ...(category && { category: category as string }),
         },
         orderBy: {
@@ -46,6 +47,11 @@ router.get(
       });
 
       if (!template) {
+        return res.status(404).json({ error: 'Template not found' });
+      }
+
+      // Verify template belongs to user's organization
+      if (template.organizationId !== req.user!.organizationId) {
         return res.status(404).json({ error: 'Template not found' });
       }
 
@@ -80,6 +86,7 @@ router.post(
           suggestedDuration,
           visibility: visibility || 'TEAM',
           isActive: true,
+          organizationId: req.user!.organizationId,
         },
       });
 
@@ -100,6 +107,15 @@ router.patch(
     try {
       const { id } = req.params;
       const updates = req.body;
+
+      // Verify template exists and belongs to user's organization
+      const existing = await prisma.goalTemplate.findUnique({ where: { id } });
+      if (!existing || existing.organizationId !== req.user!.organizationId) {
+        return res.status(404).json({ error: 'Template not found' });
+      }
+
+      // Prevent changing organizationId
+      delete updates.organizationId;
 
       const template = await prisma.goalTemplate.update({
         where: { id },
@@ -122,6 +138,12 @@ router.delete(
   async (req: AuthRequest, res) => {
     try {
       const { id } = req.params;
+
+      // Verify template exists and belongs to user's organization
+      const existing = await prisma.goalTemplate.findUnique({ where: { id } });
+      if (!existing || existing.organizationId !== req.user!.organizationId) {
+        return res.status(404).json({ error: 'Template not found' });
+      }
 
       // Soft delete by marking as inactive
       await prisma.goalTemplate.update({
@@ -160,6 +182,17 @@ router.post(
         return res.status(404).json({ error: 'Template not found' });
       }
 
+      // Verify template belongs to user's organization
+      if (template.organizationId !== req.user!.organizationId) {
+        return res.status(404).json({ error: 'Template not found' });
+      }
+
+      // Verify employee belongs to user's organization
+      const employee = await prisma.user.findUnique({ where: { id: employeeId } });
+      if (!employee || employee.organizationId !== req.user!.organizationId) {
+        return res.status(404).json({ error: 'Employee not found' });
+      }
+
       // Calculate due date if not provided
       let calculatedDueDate = dueDate;
       if (!calculatedDueDate && template.suggestedDuration) {
@@ -179,6 +212,7 @@ router.post(
           dueDate: calculatedDueDate ? new Date(calculatedDueDate) : null,
           visibility: visibility || template.visibility,
           status: 'ACTIVE',
+          organizationId: req.user!.organizationId,
         },
         include: {
           owner: {

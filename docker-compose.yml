@@ -27,8 +27,9 @@ services:
       dockerfile: Dockerfile
     container_name: beacon-backend
     restart: unless-stopped
-    ports:
-      - "3001:3001"
+    # Only expose internally, not to host - access via Traefik reverse proxy
+    expose:
+      - "3001"
     environment:
       DATABASE_URL: postgresql://beacon:${POSTGRES_PASSWORD:-changeme}@postgres:5432/beacon
       JWT_SECRET: ${JWT_SECRET}

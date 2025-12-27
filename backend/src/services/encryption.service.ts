@@ -3,8 +3,21 @@ import crypto from 'crypto';
 const ALGORITHM = 'aes-256-gcm';
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
 
+// Validate encryption key at startup
 if (!ENCRYPTION_KEY) {
-  console.warn('ENCRYPTION_KEY not set in environment variables. Integration credentials will not be encrypted.');
+  throw new Error(
+    'CRITICAL: ENCRYPTION_KEY environment variable is not set. ' +
+    'This is required for encrypting sensitive data (OAuth tokens, integration credentials). ' +
+    'Generate a 32-byte hex key with: openssl rand -hex 32'
+  );
+}
+
+// Validate key format (must be 64 hex characters = 32 bytes)
+if (!/^[a-fA-F0-9]{64}$/.test(ENCRYPTION_KEY)) {
+  throw new Error(
+    'CRITICAL: ENCRYPTION_KEY must be exactly 64 hexadecimal characters (32 bytes). ' +
+    'Generate a valid key with: openssl rand -hex 32'
+  );
 }
 
 /**
@@ -13,10 +26,6 @@ if (!ENCRYPTION_KEY) {
  * @returns Encrypted string in format: iv:authTag:encrypted
  */
 export function encrypt(text: string): string {
-  if (!ENCRYPTION_KEY) {
-    throw new Error('ENCRYPTION_KEY must be set to encrypt data');
-  }
-
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv(
     ALGORITHM,
@@ -38,10 +47,6 @@ export function encrypt(text: string): string {
  * @returns Decrypted plain text
  */
 export function decrypt(encryptedData: string): string {
-  if (!ENCRYPTION_KEY) {
-    throw new Error('ENCRYPTION_KEY must be set to decrypt data');
-  }
-
   const [ivHex, authTagHex, encrypted] = encryptedData.split(':');
 
   if (!ivHex || !authTagHex || !encrypted) {

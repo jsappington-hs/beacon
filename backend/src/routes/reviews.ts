@@ -269,6 +269,12 @@ router.post(
         return res.status(400).json({ error: 'Cycle ID and employee IDs are required' });
       }
 
+      // Verify cycle belongs to user's organization
+      const cycle = await prisma.reviewCycle.findUnique({ where: { id: cycleId } });
+      if (!cycle || cycle.organizationId !== req.user!.organizationId) {
+        return res.status(404).json({ error: 'Review cycle not found' });
+      }
+
       // Get employees with their managers (scoped to organization)
       const employees = await prisma.user.findMany({
         where: {

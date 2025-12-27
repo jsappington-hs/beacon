@@ -13,6 +13,19 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 // Helper to check if user is super admin
 const isSuperAdmin = (role: UserRole) => role === UserRole.SUPER_ADMIN;
 
+// Role hierarchy for privilege escalation prevention
+const ROLE_LEVELS: Record<string, number> = {
+  'EMPLOYEE': 1,
+  'MANAGER': 2,
+  'HR_ADMIN': 3,
+  'SUPER_ADMIN': 4,
+};
+
+// Check if a user can assign a role (must be >= the role being assigned)
+const canAssignRole = (userRole: string, targetRole: string): boolean => {
+  return ROLE_LEVELS[userRole] >= ROLE_LEVELS[targetRole];
+};
+
 // ===== SETTINGS ENDPOINTS =====
 
 /**
@@ -313,6 +326,16 @@ router.post(
             results.errors.push({
               row: index + 1,
               error: `Invalid role: ${record.role}`,
+              data: record
+            });
+            continue;
+          }
+
+          // Prevent privilege escalation - user cannot create users with higher role than their own
+          if (!canAssignRole(req.user!.role, role)) {
+            results.errors.push({
+              row: index + 1,
+              error: `Cannot assign role ${role} - exceeds your permission level`,
               data: record
             });
             continue;
@@ -667,6 +690,11 @@ router.get(
       });
 
       if (!log) {
+        return res.status(404).json({ error: 'Audit log not found' });
+      }
+
+      // Verify audit log belongs to user's organization (IDOR protection)
+      if (log.organizationId !== req.user!.organizationId) {
         return res.status(404).json({ error: 'Audit log not found' });
       }
 

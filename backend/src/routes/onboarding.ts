@@ -26,6 +26,14 @@ router.post('/register', async (req: Request, res: Response) => {
       });
     }
 
+    // Strong password policy: min 8 chars, uppercase, lowercase, number, special char
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+    if (!passwordRegex.test(adminPassword)) {
+      return res.status(400).json({
+        error: 'Password must be at least 8 characters and include uppercase, lowercase, number, and special character',
+      });
+    }
+
     // Check if email already exists
     const existingUser = await prisma.user.findUnique({
       where: { email: adminEmail },
