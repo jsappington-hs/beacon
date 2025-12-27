@@ -126,7 +126,7 @@ export default function Layout() {
         </div>
 
         {/* Navigation */}
-        <nav style={{ padding: '16px 12px' }}>
+        <nav style={{ flex: 1, padding: '16px 12px' }}>
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.path);
