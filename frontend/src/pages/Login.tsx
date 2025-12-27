@@ -105,7 +105,7 @@ export default function Login() {
 
         {/* Form */}
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '24px' }}>
+          <div style={{ marginBottom: '16px' }}>
             <label htmlFor="email" style={{
               display: 'block',
               marginBottom: '8px',
@@ -136,7 +136,7 @@ export default function Login() {
             />
           </div>
 
-          <div style={{ marginBottom: '24px' }}>
+          <div style={{ marginBottom: '20px' }}>
             <label htmlFor="password" style={{
               display: 'block',
               marginBottom: '8px',
