@@ -213,6 +213,28 @@ export default function Login() {
             {isLoading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
+
+        {/* Register Link */}
+        <p style={{
+          textAlign: 'center',
+          marginTop: '24px',
+          fontSize: '14px',
+          color: '#6b7280',
+        }}>
+          Don't have an account?{' '}
+          <Link
+            to="/register"
+            style={{
+              color: '#667eea',
+              textDecoration: 'none',
+              fontWeight: '600',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+            onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+          >
+            Get started
+          </Link>
+        </p>
       </div>
     </div>
   );

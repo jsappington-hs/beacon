@@ -62,6 +62,19 @@ export const auth = {
   },
 };
 
+// Onboarding API
+export const onboarding = {
+  register: async (data: {
+    organizationName: string;
+    adminName: string;
+    adminEmail: string;
+    adminPassword: string;
+  }): Promise<AuthResponse> => {
+    const response = await api.post('/onboarding/register', data);
+    return response.data;
+  },
+};
+
 // Users API
 export const users = {
   getAll: async (): Promise<User[]> => {

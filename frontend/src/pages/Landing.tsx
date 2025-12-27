@@ -74,31 +74,64 @@ export default function Landing() {
         }}>
           Empower your team with continuous feedback, goal alignment, and meaningful development conversations.
         </p>
-        <Link
-          to="/login"
-          style={{
-            display: 'inline-block',
-            padding: 'clamp(14px, 3vw, 20px) clamp(32px, 8vw, 56px)',
-            background: 'white',
-            color: '#667eea',
-            borderRadius: '12px',
-            textDecoration: 'none',
-            fontWeight: '700',
-            fontSize: 'clamp(16px, 4vw, 20px)',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
-            transition: 'transform 0.2s',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-3px)';
-            e.currentTarget.style.boxShadow = '0 25px 70px rgba(0, 0, 0, 0.35)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 20px 60px rgba(0, 0, 0, 0.3)';
-          }}
-        >
-          Sign In
-        </Link>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'row',
+          gap: 'clamp(12px, 3vw, 20px)',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+        }}>
+          <Link
+            to="/register"
+            style={{
+              display: 'inline-block',
+              padding: 'clamp(14px, 3vw, 20px) clamp(32px, 8vw, 56px)',
+              background: 'white',
+              color: '#667eea',
+              borderRadius: '12px',
+              textDecoration: 'none',
+              fontWeight: '700',
+              fontSize: 'clamp(16px, 4vw, 20px)',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+              transition: 'transform 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-3px)';
+              e.currentTarget.style.boxShadow = '0 25px 70px rgba(0, 0, 0, 0.35)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 20px 60px rgba(0, 0, 0, 0.3)';
+            }}
+          >
+            Get Started
+          </Link>
+          <Link
+            to="/login"
+            style={{
+              display: 'inline-block',
+              padding: 'clamp(14px, 3vw, 20px) clamp(32px, 8vw, 56px)',
+              background: 'transparent',
+              color: 'white',
+              borderRadius: '12px',
+              textDecoration: 'none',
+              fontWeight: '700',
+              fontSize: 'clamp(16px, 4vw, 20px)',
+              border: '2px solid white',
+              transition: 'transform 0.2s, background 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-3px)';
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            Sign In
+          </Link>
+        </div>
       </div>
     </div>
   );
