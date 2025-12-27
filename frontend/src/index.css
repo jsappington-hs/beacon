@@ -166,6 +166,76 @@ body {
   .stats-grid {
     grid-template-columns: 1fr !important;
   }
+
+  /* Page headers with action buttons */
+  .page-header-with-action {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .page-header-with-action h1 {
+    font-size: 24px !important;
+  }
+
+  .create-cycle-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Review cycle cards */
+  .review-cycle-card {
+    padding: 16px !important;
+  }
+
+  .review-cycle-card-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .review-cycle-card-title {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  .review-cycle-card-title h3 {
+    width: 100%;
+    font-size: 16px !important;
+  }
+
+  .assign-reviews-btn {
+    width: 100%;
+    justify-content: center;
+    margin-top: 12px;
+  }
+
+  /* Modal mobile styles */
+  .modal-content {
+    margin: 0 !important;
+    border-radius: 12px !important;
+  }
+
+  .modal-content h2 {
+    font-size: 20px !important;
+  }
+
+  .modal-actions {
+    flex-direction: column-reverse !important;
+  }
+
+  .modal-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .modal-selection-info {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .modal-selection-info button {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 /* Tablet and up */

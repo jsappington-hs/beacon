@@ -81,6 +81,7 @@ export default function ReviewManagement() {
     return (
       <div
         key={cycle.id}
+        className="review-cycle-card"
         style={{
           border: '1px solid #e5e7eb',
           borderRadius: '12px',
@@ -90,9 +91,9 @@ export default function ReviewManagement() {
           transition: 'all 0.2s',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+        <div className="review-cycle-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px', gap: '16px' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="review-cycle-card-title" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px', flexWrap: 'wrap' }}>
               <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#111827' }}>
                 {cycle.name}
               </h3>
@@ -124,6 +125,7 @@ export default function ReviewManagement() {
                 setSelectedCycle(cycle);
                 setShowAssignReviewsModal(true);
               }}
+              className="assign-reviews-btn"
               style={{
                 padding: '8px 16px',
                 background: '#3b82f6',
@@ -137,6 +139,7 @@ export default function ReviewManagement() {
                 alignItems: 'center',
                 gap: '6px',
                 transition: 'all 0.15s',
+                flexShrink: 0,
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = '#2563eb';
@@ -188,7 +191,7 @@ export default function ReviewManagement() {
 
   return (
     <div style={{ padding: '48px' }}>
-      <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+      <div className="page-header-with-action" style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '16px', flexWrap: 'wrap' }}>
         <div>
           <h1 style={{ fontSize: '32px', fontWeight: '600', color: '#111827', marginBottom: '8px', letterSpacing: '-0.5px' }}>
             Review Management
@@ -200,6 +203,7 @@ export default function ReviewManagement() {
 
         <button
           onClick={() => setShowCreateCycleModal(true)}
+          className="create-cycle-btn"
           style={{
             padding: '12px 24px',
             background: '#3b82f6',

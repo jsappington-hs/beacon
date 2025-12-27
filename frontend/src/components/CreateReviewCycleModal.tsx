@@ -63,11 +63,14 @@ export default function CreateReviewCycleModal({ onClose, onCreated }: CreateRev
       onClick={onClose}
     >
       <div
+        className="modal-content"
         style={{
           background: '#ffffff',
           borderRadius: '16px',
           maxWidth: '500px',
           width: '100%',
+          maxHeight: '90vh',
+          overflow: 'auto',
           boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
         }}
         onClick={(e) => e.stopPropagation()}
@@ -231,7 +234,7 @@ export default function CreateReviewCycleModal({ onClose, onCreated }: CreateRev
           </div>
 
           {/* Actions */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+          <div className="modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
             <button
               type="button"
               onClick={onClose}

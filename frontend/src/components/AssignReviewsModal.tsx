@@ -110,6 +110,7 @@ export default function AssignReviewsModal({ cycle, onClose, onAssigned }: Assig
       onClick={onClose}
     >
       <div
+        className="modal-content"
         style={{
           background: '#ffffff',
           borderRadius: '16px',
@@ -173,7 +174,7 @@ export default function AssignReviewsModal({ cycle, onClose, onAssigned }: Assig
           )}
 
           {/* Selection Info */}
-          <div style={{ padding: '20px 24px', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="modal-selection-info" style={{ padding: '20px 24px', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <div>
               <p style={{ margin: 0, fontSize: '14px', color: '#374151' }}>
                 <strong>{selectedEmployeeIds.size}</strong> of <strong>{employees.length}</strong> employees selected
@@ -274,7 +275,7 @@ export default function AssignReviewsModal({ cycle, onClose, onAssigned }: Assig
           </div>
 
           {/* Actions */}
-          <div style={{ padding: '16px 24px', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+          <div className="modal-actions" style={{ padding: '16px 24px', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
             <button
               type="button"
               onClick={onClose}
