@@ -17,7 +17,13 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadEmployees();
+    // Only load employees if user is authenticated (has token)
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      loadEmployees();
+    } else {
+      setIsLoading(false);
+    }
   }, []);
 
   const loadEmployees = async () => {
