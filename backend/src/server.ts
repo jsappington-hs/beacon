@@ -2,6 +2,8 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
 import departmentRoutes from './routes/departments';
@@ -15,8 +17,12 @@ import googleCalendarRoutes from './routes/google-calendar';
 import profileRoutes from './routes/profile';
 import adminRoutes from './routes/admin';
 import { authenticateToken } from './middleware/auth';
+import { PrismaClient } from '@prisma/client';
 
 dotenv.config();
+
+const execAsync = promisify(exec);
+const prisma = new PrismaClient();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -51,8 +57,25 @@ app.use('/api/calendar', googleCalendarRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/admin', adminRoutes);
 
-app.listen(PORT, () => {
+// Auto-seed database on first startup (for production deployments)
+async function autoSeedIfEmpty() {
+  try {
+    const userCount = await prisma.user.count();
+    if (userCount === 0) {
+      console.log('📊 Database is empty, seeding with initial data...');
+      await execAsync('npx ts-node prisma/seed.ts');
+      console.log('✅ Database seeded successfully!');
+    } else {
+      console.log(`✅ Database already has ${userCount} users, skipping seed`);
+    }
+  } catch (error) {
+    console.error('⚠️ Error checking/seeding database:', error);
+  }
+}
+
+app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
+  await autoSeedIfEmpty();
 });
 
 export default app;
