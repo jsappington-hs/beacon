@@ -11,6 +11,7 @@ const corsHeaders = {
 
 interface CheckoutRequest {
   priceId: string
+  quantity?: number
   successUrl: string
   cancelUrl: string
 }
@@ -84,7 +85,7 @@ serve(async (req) => {
       )
     }
 
-    const { priceId, successUrl, cancelUrl }: CheckoutRequest = await req.json()
+    const { priceId, quantity, successUrl, cancelUrl }: CheckoutRequest = await req.json()
 
     if (!priceId || !successUrl || !cancelUrl) {
       return new Response(
@@ -92,6 +93,8 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    const seatCount = quantity || 1
 
     const stripe = new Stripe(stripeSecretKey, {
       apiVersion: '2023-10-16',
@@ -124,12 +127,13 @@ serve(async (req) => {
       customer: customerId,
       mode: 'subscription',
       payment_method_types: ['card'],
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: seatCount }],
       success_url: successUrl,
       cancel_url: cancelUrl,
       subscription_data: {
         metadata: {
           organization_id: userData.organization_id,
+          seat_count: seatCount.toString(),
         },
       },
     })

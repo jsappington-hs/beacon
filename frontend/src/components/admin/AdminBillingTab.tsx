@@ -1,63 +1,34 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
-import { CreditCard, Check, ExternalLink, AlertCircle, Zap } from 'lucide-react';
+import { CreditCard, Check, ExternalLink, AlertCircle, Users, Minus, Plus } from 'lucide-react';
 
-interface PricingPlan {
-  id: string;
-  name: string;
-  price: number;
-  period: string;
-  priceId: string;
-  features: string[];
-  recommended?: boolean;
-  savings?: string;
-}
+const MONTHLY_PRICE_ID = 'price_1SjRAACwCNHtAVIQ9mD1IPEC';
+const YEARLY_PRICE_ID = 'price_1SjRAACwCNHtAVIQVacO8Dbm';
+const PRICE_PER_SEAT_MONTHLY = 7;
+const PRICE_PER_SEAT_YEARLY = 60;
 
-const PRICING_PLANS: PricingPlan[] = [
-  {
-    id: 'monthly',
-    name: 'Monthly',
-    price: 7,
-    period: 'month',
-    priceId: 'price_1SjRAACwCNHtAVIQ9mD1IPEC',
-    features: [
-      'Unlimited users',
-      'Performance reviews',
-      'Goal tracking',
-      '1:1 meetings',
-      'Development plans',
-      'Email support',
-    ],
-  },
-  {
-    id: 'yearly',
-    name: 'Yearly',
-    price: 60,
-    period: 'year',
-    priceId: 'price_1SjRAACwCNHtAVIQVacO8Dbm',
-    features: [
-      'Unlimited users',
-      'Performance reviews',
-      'Goal tracking',
-      '1:1 meetings',
-      'Development plans',
-      'Email support',
-    ],
-    recommended: true,
-    savings: 'Save $24/year',
-  },
+const FEATURES = [
+  'Performance reviews',
+  'Goal tracking',
+  '1:1 meetings',
+  'Development plans',
+  'Email support',
 ];
 
 export default function AdminBillingTab() {
   const { organization } = useAuth();
-  const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
+  const [isYearly, setIsYearly] = useState(true);
+  const [seatCount, setSeatCount] = useState(1);
+  const [currentUserCount, setCurrentUserCount] = useState(1);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [subscriptionDetails, setSubscriptionDetails] = useState<any>(null);
 
   useEffect(() => {
     if (organization) {
       loadSubscriptionDetails();
+      loadUserCount();
     }
   }, [organization]);
 
@@ -76,22 +47,36 @@ export default function AdminBillingTab() {
     }
   };
 
-  const handleSubscribe = async (planId: string, priceId: string) => {
-    if (!priceId) {
-      setError('Subscription pricing not configured. Please contact support.');
-      return;
+  const loadUserCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', organization?.id);
+
+      if (error) throw error;
+      const userCount = count || 1;
+      setCurrentUserCount(userCount);
+      setSeatCount(Math.max(userCount, 1));
+    } catch (err) {
+      console.error('Failed to load user count:', err);
     }
+  };
 
-    if (loadingPlanId) return; // Prevent double-clicks
+  const handleSubscribe = async () => {
+    if (loading) return;
 
-    setLoadingPlanId(planId);
+    setLoading(true);
     setError(null);
 
+    const priceId = isYearly ? YEARLY_PRICE_ID : MONTHLY_PRICE_ID;
+
     try {
-      console.log('Calling create-checkout-session with priceId:', priceId);
+      console.log('Calling create-checkout-session with:', { priceId, quantity: seatCount });
       const { data, error } = await supabase.functions.invoke('create-checkout-session', {
         body: {
           priceId,
+          quantity: seatCount,
           successUrl: `${window.location.origin}/admin?billing=success`,
           cancelUrl: `${window.location.origin}/admin?billing=canceled`,
         },
@@ -110,14 +95,14 @@ export default function AdminBillingTab() {
       console.error('Checkout error:', err);
       setError(err.message || 'Failed to start checkout');
     } finally {
-      setLoadingPlanId(null);
+      setLoading(false);
     }
   };
 
   const handleManageBilling = async () => {
-    if (loadingPlanId) return;
+    if (loading) return;
 
-    setLoadingPlanId('manage');
+    setLoading(true);
     setError(null);
 
     try {
@@ -137,12 +122,18 @@ export default function AdminBillingTab() {
     } catch (err: any) {
       setError(err.message || 'Failed to open billing portal');
     } finally {
-      setLoadingPlanId(null);
+      setLoading(false);
     }
   };
 
   const currentTier = subscriptionDetails?.subscription_tier || 'free';
   const subscriptionStatus = subscriptionDetails?.subscription_status || 'inactive';
+  const isSubscribed = ['active', 'trialing'].includes(subscriptionStatus);
+
+  const pricePerSeat = isYearly ? PRICE_PER_SEAT_YEARLY : PRICE_PER_SEAT_MONTHLY;
+  const totalPrice = pricePerSeat * seatCount;
+  const monthlyEquivalent = isYearly ? (PRICE_PER_SEAT_YEARLY / 12) : PRICE_PER_SEAT_MONTHLY;
+  const savings = isYearly ? (PRICE_PER_SEAT_MONTHLY * 12 - PRICE_PER_SEAT_YEARLY) * seatCount : 0;
 
   const getStatusBadge = () => {
     const styles: Record<string, { bg: string; color: string; text: string }> = {
@@ -172,7 +163,7 @@ export default function AdminBillingTab() {
   };
 
   return (
-    <div style={{ maxWidth: '1000px' }}>
+    <div style={{ maxWidth: '600px' }}>
       {/* Current Plan Section */}
       <div
         style={{
@@ -200,7 +191,7 @@ export default function AdminBillingTab() {
             </div>
             <p style={{ color: '#6b7280', fontSize: '14px', margin: 0 }}>
               {currentTier === 'free'
-                ? 'Upgrade to unlock more features and users'
+                ? `You have ${currentUserCount} user${currentUserCount !== 1 ? 's' : ''} in your organization`
                 : subscriptionStatus === 'active'
                 ? 'Your subscription is active and will renew automatically'
                 : subscriptionStatus === 'trialing'
@@ -212,7 +203,7 @@ export default function AdminBillingTab() {
           {subscriptionDetails?.stripe_customer_id && (
             <button
               onClick={handleManageBilling}
-              disabled={loadingPlanId !== null}
+              disabled={loading}
               style={{
                 padding: '10px 20px',
                 background: 'white',
@@ -221,14 +212,14 @@ export default function AdminBillingTab() {
                 borderRadius: '8px',
                 fontSize: '14px',
                 fontWeight: '500',
-                cursor: loadingPlanId !== null ? 'not-allowed' : 'pointer',
+                cursor: loading ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
               }}
             >
               <ExternalLink size={16} />
-              {loadingPlanId === 'manage' ? 'Loading...' : 'Manage Billing'}
+              {loading ? 'Loading...' : 'Manage Billing'}
             </button>
           )}
         </div>
@@ -269,151 +260,237 @@ export default function AdminBillingTab() {
         </div>
       )}
 
-      {/* Pricing Plans */}
-      <div
-        style={{
-          background: 'white',
-          borderRadius: '12px',
-          border: '1px solid #e5e7eb',
-          padding: '24px',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-          <Zap size={20} style={{ color: '#8b5cf6' }} />
-          <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', margin: 0 }}>
-            Available Plans
-          </h3>
-        </div>
-
+      {/* Pricing Section */}
+      {!isSubscribed && (
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: '24px',
+            background: 'white',
+            borderRadius: '12px',
+            border: '1px solid #e5e7eb',
+            padding: '24px',
           }}
         >
-          {PRICING_PLANS.map((plan) => (
+          {/* Billing Toggle */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '32px' }}>
             <div
-              key={plan.id}
               style={{
-                border: plan.recommended ? '2px solid #8b5cf6' : '1px solid #e5e7eb',
-                borderRadius: '12px',
-                padding: '24px',
-                position: 'relative',
-                background: plan.recommended ? '#faf5ff' : 'white',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '4px',
+                background: '#f3f4f6',
+                borderRadius: '8px',
               }}
             >
-              {plan.recommended && (
+              <button
+                onClick={() => setIsYearly(false)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  background: !isYearly ? 'white' : 'transparent',
+                  color: !isYearly ? '#111827' : '#6b7280',
+                  boxShadow: !isYearly ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                }}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setIsYearly(true)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  background: isYearly ? 'white' : 'transparent',
+                  color: isYearly ? '#111827' : '#6b7280',
+                  boxShadow: isYearly ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                Yearly
                 <span
                   style={{
-                    position: 'absolute',
-                    top: '-12px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    padding: '4px 12px',
-                    background: '#8b5cf6',
-                    color: 'white',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    borderRadius: '9999px',
-                  }}
-                >
-                  RECOMMENDED
-                </span>
-              )}
-
-              <h4
-                style={{
-                  fontSize: '20px',
-                  fontWeight: '600',
-                  color: '#111827',
-                  margin: '0 0 8px 0',
-                }}
-              >
-                {plan.name}
-              </h4>
-
-              <div style={{ marginBottom: '20px' }}>
-                <span style={{ fontSize: '36px', fontWeight: '700', color: '#111827' }}>
-                  ${plan.price}
-                </span>
-                <span style={{ color: '#6b7280', fontSize: '14px' }}>/{plan.period}</span>
-                {plan.savings && (
-                  <div style={{
-                    marginTop: '8px',
-                    padding: '4px 10px',
+                    padding: '2px 6px',
                     background: '#dcfce7',
                     color: '#166534',
-                    borderRadius: '6px',
-                    fontSize: '12px',
+                    borderRadius: '4px',
+                    fontSize: '11px',
                     fontWeight: '600',
-                    display: 'inline-block',
-                  }}>
-                    {plan.savings}
-                  </div>
-                )}
-              </div>
-
-              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px 0' }}>
-                {plan.features.map((feature, idx) => (
-                  <li
-                    key={idx}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '8px 0',
-                      color: '#374151',
-                      fontSize: '14px',
-                    }}
-                  >
-                    <Check size={16} style={{ color: '#10b981', flexShrink: 0 }} />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-
-              <button
-                onClick={() => handleSubscribe(plan.id, plan.priceId)}
-                disabled={loadingPlanId !== null || currentTier === plan.id}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  background:
-                    currentTier === plan.id
-                      ? '#e5e7eb'
-                      : plan.recommended
-                      ? '#8b5cf6'
-                      : '#3b82f6',
-                  color: currentTier === plan.id ? '#9ca3af' : 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  cursor: loadingPlanId !== null || currentTier === plan.id ? 'not-allowed' : 'pointer',
-                }}
-              >
-                {currentTier === plan.id
-                  ? 'Current Plan'
-                  : loadingPlanId === plan.id
-                  ? 'Loading...'
-                  : 'Subscribe'}
+                  }}
+                >
+                  Save 29%
+                </span>
               </button>
             </div>
-          ))}
-        </div>
+          </div>
 
-        <p
-          style={{
-            marginTop: '24px',
-            textAlign: 'center',
-            color: '#6b7280',
-            fontSize: '13px',
-          }}
-        >
-          All plans include a 14-day free trial. Cancel anytime.
-        </p>
-      </div>
+          {/* Price Display */}
+          <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+            <div style={{ marginBottom: '8px' }}>
+              <span style={{ fontSize: '48px', fontWeight: '700', color: '#111827' }}>
+                ${monthlyEquivalent.toFixed(0)}
+              </span>
+              <span style={{ fontSize: '18px', color: '#6b7280' }}>/seat/month</span>
+            </div>
+            {isYearly && (
+              <p style={{ color: '#6b7280', fontSize: '14px', margin: 0 }}>
+                Billed annually at ${PRICE_PER_SEAT_YEARLY}/seat/year
+              </p>
+            )}
+          </div>
+
+          {/* Seat Selection */}
+          <div
+            style={{
+              padding: '16px',
+              background: '#f9fafb',
+              borderRadius: '8px',
+              marginBottom: '24px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Users size={18} style={{ color: '#6b7280' }} />
+                <span style={{ fontSize: '14px', color: '#374151', fontWeight: '500' }}>
+                  Number of seats
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <button
+                  onClick={() => setSeatCount(Math.max(currentUserCount, seatCount - 1))}
+                  disabled={seatCount <= currentUserCount}
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '6px',
+                    border: '1px solid #e5e7eb',
+                    background: 'white',
+                    cursor: seatCount <= currentUserCount ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: seatCount <= currentUserCount ? 0.5 : 1,
+                  }}
+                >
+                  <Minus size={16} />
+                </button>
+                <span style={{ fontSize: '18px', fontWeight: '600', color: '#111827', minWidth: '40px', textAlign: 'center' }}>
+                  {seatCount}
+                </span>
+                <button
+                  onClick={() => setSeatCount(seatCount + 1)}
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '6px',
+                    border: '1px solid #e5e7eb',
+                    background: 'white',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
+            </div>
+            {seatCount < currentUserCount && (
+              <p style={{ fontSize: '12px', color: '#dc2626', marginTop: '8px', marginBottom: 0 }}>
+                Minimum {currentUserCount} seats required for your current users
+              </p>
+            )}
+            {seatCount === currentUserCount && (
+              <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px', marginBottom: 0 }}>
+                Based on your current {currentUserCount} user{currentUserCount !== 1 ? 's' : ''}
+              </p>
+            )}
+          </div>
+
+          {/* Total */}
+          <div
+            style={{
+              padding: '16px',
+              background: '#f0fdf4',
+              borderRadius: '8px',
+              marginBottom: '24px',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '14px', color: '#374151' }}>
+                {seatCount} seat{seatCount !== 1 ? 's' : ''} × ${pricePerSeat}/{isYearly ? 'year' : 'month'}
+              </span>
+              <span style={{ fontSize: '20px', fontWeight: '700', color: '#111827' }}>
+                ${totalPrice}/{isYearly ? 'year' : 'month'}
+              </span>
+            </div>
+            {isYearly && savings > 0 && (
+              <p style={{ fontSize: '13px', color: '#166534', marginTop: '8px', marginBottom: 0 }}>
+                You save ${savings}/year compared to monthly billing
+              </p>
+            )}
+          </div>
+
+          {/* Features */}
+          <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px 0' }}>
+            {FEATURES.map((feature, idx) => (
+              <li
+                key={idx}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '8px 0',
+                  color: '#374151',
+                  fontSize: '14px',
+                }}
+              >
+                <Check size={16} style={{ color: '#10b981', flexShrink: 0 }} />
+                {feature}
+              </li>
+            ))}
+          </ul>
+
+          {/* Subscribe Button */}
+          <button
+            onClick={handleSubscribe}
+            disabled={loading}
+            style={{
+              width: '100%',
+              padding: '14px',
+              background: '#8b5cf6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '16px',
+              fontWeight: '600',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.7 : 1,
+            }}
+          >
+            {loading ? 'Loading...' : `Subscribe for $${totalPrice}/${isYearly ? 'year' : 'month'}`}
+          </button>
+
+          <p
+            style={{
+              marginTop: '16px',
+              textAlign: 'center',
+              color: '#6b7280',
+              fontSize: '13px',
+            }}
+          >
+            14-day free trial included. Cancel anytime.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
