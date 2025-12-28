@@ -57,9 +57,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   // Fetch user profile from database
-  const fetchUserProfile = async (authUser: SupabaseUser) => {
+  const fetchUserProfile = async (authUser: SupabaseUser, accessToken?: string) => {
     try {
       console.log('fetchUserProfile: Starting for user', authUser.id);
+      console.log('fetchUserProfile: Has access token:', !!accessToken);
 
       // First, just fetch the user without join
       console.log('fetchUserProfile: Making simple query...');
@@ -69,16 +70,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       const url = `${supabaseUrl}/rest/v1/users?id=eq.${authUser.id}&select=*`;
 
-      // Get the session token for authenticated requests
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData?.session?.access_token || supabaseKey;
-      console.log('fetchUserProfile: Got access token:', !!sessionData?.session?.access_token);
+      // Use provided token or fall back to anon key
+      const token = accessToken || supabaseKey;
 
       console.log('fetchUserProfile: Making raw fetch...');
       const response = await fetch(url, {
         headers: {
           'apikey': supabaseKey,
-          'Authorization': `Bearer ${accessToken}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
@@ -103,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const orgResponse = await fetch(orgUrl, {
         headers: {
           'apikey': supabaseKey,
-          'Authorization': `Bearer ${accessToken}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
@@ -137,8 +136,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('onAuthStateChange:', event, !!session);
         if (event === 'SIGNED_IN' && session?.user) {
-          await fetchUserProfile(session.user);
+          // Pass the access token from the session
+          await fetchUserProfile(session.user, session.access_token);
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
           setOrganization(null);
