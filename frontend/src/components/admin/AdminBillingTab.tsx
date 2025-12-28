@@ -51,7 +51,7 @@ const PRICING_PLANS: PricingPlan[] = [
 
 export default function AdminBillingTab() {
   const { organization } = useAuth();
-  const [loading, setLoading] = useState(false);
+  const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [subscriptionDetails, setSubscriptionDetails] = useState<any>(null);
 
@@ -76,16 +76,19 @@ export default function AdminBillingTab() {
     }
   };
 
-  const handleSubscribe = async (priceId: string) => {
+  const handleSubscribe = async (planId: string, priceId: string) => {
     if (!priceId) {
       setError('Subscription pricing not configured. Please contact support.');
       return;
     }
 
-    setLoading(true);
+    if (loadingPlanId) return; // Prevent double-clicks
+
+    setLoadingPlanId(planId);
     setError(null);
 
     try {
+      console.log('Calling create-checkout-session with priceId:', priceId);
       const { data, error } = await supabase.functions.invoke('create-checkout-session', {
         body: {
           priceId,
@@ -93,6 +96,8 @@ export default function AdminBillingTab() {
           cancelUrl: `${window.location.origin}/admin?billing=canceled`,
         },
       });
+
+      console.log('Response:', { data, error });
 
       if (error) throw error;
 
@@ -102,14 +107,17 @@ export default function AdminBillingTab() {
         throw new Error('No checkout URL returned');
       }
     } catch (err: any) {
+      console.error('Checkout error:', err);
       setError(err.message || 'Failed to start checkout');
     } finally {
-      setLoading(false);
+      setLoadingPlanId(null);
     }
   };
 
   const handleManageBilling = async () => {
-    setLoading(true);
+    if (loadingPlanId) return;
+
+    setLoadingPlanId('manage');
     setError(null);
 
     try {
@@ -129,7 +137,7 @@ export default function AdminBillingTab() {
     } catch (err: any) {
       setError(err.message || 'Failed to open billing portal');
     } finally {
-      setLoading(false);
+      setLoadingPlanId(null);
     }
   };
 
@@ -204,7 +212,7 @@ export default function AdminBillingTab() {
           {subscriptionDetails?.stripe_customer_id && (
             <button
               onClick={handleManageBilling}
-              disabled={loading}
+              disabled={loadingPlanId !== null}
               style={{
                 padding: '10px 20px',
                 background: 'white',
@@ -213,14 +221,14 @@ export default function AdminBillingTab() {
                 borderRadius: '8px',
                 fontSize: '14px',
                 fontWeight: '500',
-                cursor: loading ? 'not-allowed' : 'pointer',
+                cursor: loadingPlanId !== null ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
               }}
             >
               <ExternalLink size={16} />
-              Manage Billing
+              {loadingPlanId === 'manage' ? 'Loading...' : 'Manage Billing'}
             </button>
           )}
         </div>
@@ -366,8 +374,8 @@ export default function AdminBillingTab() {
               </ul>
 
               <button
-                onClick={() => handleSubscribe(plan.priceId)}
-                disabled={loading || currentTier === plan.id}
+                onClick={() => handleSubscribe(plan.id, plan.priceId)}
+                disabled={loadingPlanId !== null || currentTier === plan.id}
                 style={{
                   width: '100%',
                   padding: '12px',
@@ -382,12 +390,12 @@ export default function AdminBillingTab() {
                   borderRadius: '8px',
                   fontSize: '14px',
                   fontWeight: '600',
-                  cursor: loading || currentTier === plan.id ? 'not-allowed' : 'pointer',
+                  cursor: loadingPlanId !== null || currentTier === plan.id ? 'not-allowed' : 'pointer',
                 }}
               >
                 {currentTier === plan.id
                   ? 'Current Plan'
-                  : loading
+                  : loadingPlanId === plan.id
                   ? 'Loading...'
                   : 'Subscribe'}
               </button>

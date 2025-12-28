@@ -75,7 +75,7 @@ serve(async (req) => {
     }
 
     // Only admins can manage billing
-    if (!['SUPER_ADMIN', 'ADMIN'].includes(userData.role)) {
+    if (!['SUPER_ADMIN', 'HR_ADMIN'].includes(userData.role)) {
       return new Response(
         JSON.stringify({ error: 'Only administrators can manage billing' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
