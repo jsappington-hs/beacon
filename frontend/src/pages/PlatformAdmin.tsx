@@ -85,19 +85,6 @@ export default function PlatformAdmin() {
   // Deactivate confirmation state
   const [confirmDeactivate, setConfirmDeactivate] = useState<Organization | null>(null);
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    if (!openMenuId) return;
-    const handleClickOutside = () => setOpenMenuId(null);
-    // Delay adding listener to avoid catching the opening click
-    const timeoutId = setTimeout(() => {
-      document.addEventListener('click', handleClickOutside);
-    }, 100);
-    return () => {
-      clearTimeout(timeoutId);
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, [openMenuId]);
 
   // Check platform admin access
   useEffect(() => {
@@ -426,7 +413,9 @@ export default function PlatformAdmin() {
                           onClick={(e) => {
                             e.stopPropagation();
                             e.preventDefault();
-                            setOpenMenuId(openMenuId === org.id ? null : org.id);
+                            const newId = openMenuId === org.id ? null : org.id;
+                            console.log('Setting menu to:', newId);
+                            setOpenMenuId(newId);
                           }}
                           style={{
                             padding: '8px',
