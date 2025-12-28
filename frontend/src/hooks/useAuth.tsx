@@ -59,7 +59,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Fetch user profile from database
   const fetchUserProfile = async (authUser: SupabaseUser) => {
     try {
+      console.log('fetchUserProfile: Starting for user', authUser.id);
+
       // Fetch user with organization
+      console.log('fetchUserProfile: Making query...');
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select(`
@@ -68,6 +71,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         `)
         .eq('id', authUser.id)
         .single();
+
+      console.log('fetchUserProfile: Query complete', { userData, userError });
 
       if (userError || !userData) {
         console.error('Error fetching user profile:', userError);
@@ -120,17 +125,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (credentials: LoginCredentials) => {
+    console.log('login: Starting...');
     const { data, error } = await supabase.auth.signInWithPassword({
       email: credentials.email,
       password: credentials.password,
     });
+
+    console.log('login: signInWithPassword complete', { user: data?.user?.id, error });
 
     if (error) {
       throw new Error(error.message);
     }
 
     if (data.user) {
+      console.log('login: Calling fetchUserProfile...');
       await fetchUserProfile(data.user);
+      console.log('login: fetchUserProfile complete');
     }
   };
 
