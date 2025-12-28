@@ -85,18 +85,19 @@ export default function PlatformAdmin() {
   // Deactivate confirmation state
   const [confirmDeactivate, setConfirmDeactivate] = useState<Organization | null>(null);
 
-  // Close dropdown when clicking outside - disabled for debugging
-  // useEffect(() => {
-  //   if (!openMenuId) return;
-  //   const handleClickOutside = () => setOpenMenuId(null);
-  //   const timeoutId = setTimeout(() => {
-  //     document.addEventListener('click', handleClickOutside);
-  //   }, 10);
-  //   return () => {
-  //     clearTimeout(timeoutId);
-  //     document.removeEventListener('click', handleClickOutside);
-  //   };
-  // }, [openMenuId]);
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!openMenuId) return;
+    const handleClickOutside = () => setOpenMenuId(null);
+    // Delay adding listener to avoid catching the opening click
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('click', handleClickOutside);
+    }, 100);
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [openMenuId]);
 
   // Check platform admin access
   useEffect(() => {
@@ -422,28 +423,21 @@ export default function PlatformAdmin() {
                       </td>
                       <td style={{ padding: '16px', textAlign: 'right', position: 'relative' }}>
                         <button
-                          onMouseDown={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            console.log('Ellipsis MOUSEDOWN');
-                            alert('Button clicked! org: ' + org.name);
-                            setOpenMenuId(openMenuId === org.id ? null : org.id);
-                          }}
                           onClick={(e) => {
                             e.stopPropagation();
                             e.preventDefault();
-                            console.log('Ellipsis CLICK');
+                            setOpenMenuId(openMenuId === org.id ? null : org.id);
                           }}
                           style={{
-                            padding: '12px',
-                            background: '#e5e7eb',
-                            border: '2px solid #3b82f6',
+                            padding: '8px',
+                            background: openMenuId === org.id ? '#f3f4f6' : 'transparent',
+                            border: 'none',
                             borderRadius: '6px',
                             cursor: 'pointer',
-                            color: '#111827',
+                            color: '#6b7280',
                           }}
                         >
-                          <MoreVertical size={20} />
+                          <MoreVertical size={18} />
                         </button>
                         {openMenuId === org.id && (
                           <div
