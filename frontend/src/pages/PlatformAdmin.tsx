@@ -87,11 +87,22 @@ export default function PlatformAdmin() {
 
   // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = () => setOpenMenuId(null);
-    if (openMenuId) {
+    if (!openMenuId) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      // Small delay to avoid catching the same click that opened the menu
+      setTimeout(() => setOpenMenuId(null), 0);
+    };
+
+    // Add listener on next tick so it doesn't catch the opening click
+    const timeoutId = setTimeout(() => {
       document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
-    }
+    }, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('click', handleClickOutside);
+    };
   }, [openMenuId]);
 
   // Check platform admin access
