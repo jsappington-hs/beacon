@@ -63,6 +63,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // First, just fetch the user without join
       console.log('fetchUserProfile: Making simple query...');
+
+      // Debug: Test raw fetch to see if network works
+      const testUrl = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/users?id=eq.${authUser.id}&select=*`;
+      console.log('fetchUserProfile: Testing raw fetch to', testUrl);
+
+      const { data: session } = await supabase.auth.getSession();
+      console.log('fetchUserProfile: Got session', !!session?.session);
+
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
