@@ -13,7 +13,9 @@ import {
   Power,
   PowerOff,
   BarChart3,
-  Clock,
+  MoreVertical,
+  Edit3,
+  AlertTriangle,
 } from 'lucide-react';
 
 type Tab = 'organizations' | 'metrics';
@@ -71,6 +73,26 @@ export default function PlatformAdmin() {
   // Organization detail modal
   const [selectedOrg, setSelectedOrg] = useState<OrgDetails | null>(null);
   const [isLoadingOrgDetails, setIsLoadingOrgDetails] = useState(false);
+
+  // Dropdown menu state
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  // Edit modal state
+  const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', slug: '' });
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Deactivate confirmation state
+  const [confirmDeactivate, setConfirmDeactivate] = useState<Organization | null>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => setOpenMenuId(null);
+    if (openMenuId) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [openMenuId]);
 
   // Check platform admin access
   useEffect(() => {
@@ -159,9 +181,35 @@ export default function PlatformAdmin() {
       if (selectedOrg?.id === orgId) {
         setSelectedOrg({ ...selectedOrg, isActive: !currentStatus });
       }
+      setConfirmDeactivate(null);
     } catch (error) {
       console.error('Failed to update org status:', error);
     }
+  };
+
+  const openEditModal = (org: Organization) => {
+    setEditingOrg(org);
+    setEditForm({ name: org.name, slug: org.slug });
+    setOpenMenuId(null);
+  };
+
+  const handleUpdateOrg = async () => {
+    if (!editingOrg) return;
+    setIsUpdating(true);
+    try {
+      await platformAdmin.updateOrganization(editingOrg.id, editForm);
+      loadOrganizations();
+      setEditingOrg(null);
+    } catch (error) {
+      console.error('Failed to update organization:', error);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDeactivateClick = (org: Organization) => {
+    setConfirmDeactivate(org);
+    setOpenMenuId(null);
   };
 
   // Loading state
@@ -368,29 +416,84 @@ export default function PlatformAdmin() {
                       <td style={{ padding: '16px', fontSize: '14px', color: '#6b7280' }}>
                         {new Date(org.createdAt).toLocaleDateString()}
                       </td>
-                      <td style={{ padding: '16px', textAlign: 'right' }}>
+                      <td style={{ padding: '16px', textAlign: 'right', position: 'relative' }}>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            toggleOrgStatus(org.id, org.isActive);
+                            setOpenMenuId(openMenuId === org.id ? null : org.id);
                           }}
                           style={{
-                            padding: '6px 12px',
-                            background: org.isActive ? '#fee2e2' : '#d1fae5',
-                            color: org.isActive ? '#dc2626' : '#059669',
+                            padding: '8px',
+                            background: openMenuId === org.id ? '#f3f4f6' : 'transparent',
                             border: 'none',
                             borderRadius: '6px',
                             cursor: 'pointer',
-                            fontSize: '12px',
-                            fontWeight: '500',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px',
+                            color: '#6b7280',
                           }}
                         >
-                          {org.isActive ? <PowerOff size={14} /> : <Power size={14} />}
-                          {org.isActive ? 'Deactivate' : 'Activate'}
+                          <MoreVertical size={18} />
                         </button>
+                        {openMenuId === org.id && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              right: '16px',
+                              top: '100%',
+                              background: 'white',
+                              border: '1px solid #e5e7eb',
+                              borderRadius: '8px',
+                              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                              zIndex: 100,
+                              minWidth: '160px',
+                              overflow: 'hidden',
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              onClick={() => openEditModal(org)}
+                              style={{
+                                width: '100%',
+                                padding: '10px 14px',
+                                background: 'transparent',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                color: '#374151',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                textAlign: 'left',
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                            >
+                              <Edit3 size={16} />
+                              Edit Details
+                            </button>
+                            <div style={{ height: '1px', background: '#e5e7eb' }} />
+                            <button
+                              onClick={() => handleDeactivateClick(org)}
+                              style={{
+                                width: '100%',
+                                padding: '10px 14px',
+                                background: 'transparent',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                color: org.isActive ? '#dc2626' : '#059669',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                textAlign: 'left',
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = org.isActive ? '#fef2f2' : '#f0fdf4'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                            >
+                              {org.isActive ? <PowerOff size={16} /> : <Power size={16} />}
+                              {org.isActive ? 'Deactivate' : 'Activate'}
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -632,6 +735,206 @@ export default function PlatformAdmin() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Edit Organization Modal */}
+      {editingOrg && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px',
+          }}
+          onClick={() => setEditingOrg(null)}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '12px',
+              maxWidth: '450px',
+              width: '100%',
+              padding: '24px',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', margin: 0 }}>
+                Edit Organization
+              </h2>
+              <button
+                onClick={() => setEditingOrg(null)}
+                style={{ padding: '8px', background: 'transparent', border: 'none', cursor: 'pointer', borderRadius: '6px' }}
+              >
+                <X size={20} color="#6b7280" />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
+                  Organization Name
+                </label>
+                <input
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
+                  Slug (URL identifier)
+                </label>
+                <input
+                  type="text"
+                  value={editForm.slug}
+                  onChange={(e) => setEditForm({ ...editForm, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    boxSizing: 'border-box',
+                  }}
+                />
+                <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                  Only lowercase letters, numbers, and hyphens allowed
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '24px' }}>
+              <button
+                onClick={() => setEditingOrg(null)}
+                style={{
+                  padding: '10px 20px',
+                  background: 'white',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  color: '#374151',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpdateOrg}
+                disabled={isUpdating}
+                style={{
+                  padding: '10px 20px',
+                  background: isUpdating ? '#9ca3af' : '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: isUpdating ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {isUpdating ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Deactivate Confirmation Modal */}
+      {confirmDeactivate && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px',
+          }}
+          onClick={() => setConfirmDeactivate(null)}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '12px',
+              maxWidth: '400px',
+              width: '100%',
+              padding: '24px',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '10px',
+                background: confirmDeactivate.isActive ? '#fef2f2' : '#f0fdf4',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <AlertTriangle size={20} color={confirmDeactivate.isActive ? '#dc2626' : '#059669'} />
+              </div>
+              <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', margin: 0 }}>
+                {confirmDeactivate.isActive ? 'Deactivate' : 'Activate'} Organization?
+              </h2>
+            </div>
+
+            <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '24px' }}>
+              {confirmDeactivate.isActive
+                ? `Are you sure you want to deactivate "${confirmDeactivate.name}"? Users in this organization will no longer be able to access the platform.`
+                : `Are you sure you want to activate "${confirmDeactivate.name}"? Users will regain access to the platform.`}
+            </p>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setConfirmDeactivate(null)}
+                style={{
+                  padding: '10px 20px',
+                  background: 'white',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  color: '#374151',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => toggleOrgStatus(confirmDeactivate.id, confirmDeactivate.isActive)}
+                style={{
+                  padding: '10px 20px',
+                  background: confirmDeactivate.isActive ? '#dc2626' : '#059669',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                }}
+              >
+                {confirmDeactivate.isActive ? 'Deactivate' : 'Activate'}
+              </button>
+            </div>
           </div>
         </div>
       )}

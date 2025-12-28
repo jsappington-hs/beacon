@@ -1627,8 +1627,22 @@ export const platformAdmin = {
 
     if (error) throw error;
 
+    // Fetch user counts for each org
+    const orgsWithCounts = await Promise.all(
+      (data || []).map(async (org) => {
+        const { count: userCount } = await supabase
+          .from('users')
+          .select('*', { count: 'exact', head: true })
+          .eq('organization_id', org.id);
+        return {
+          ...transformOrganization(org),
+          userCount: userCount || 0,
+        };
+      })
+    );
+
     return {
-      organizations: data?.map(transformOrganization) || [],
+      organizations: orgsWithCounts,
       pagination: {
         page,
         limit,
@@ -1697,6 +1711,17 @@ export const platformAdmin = {
     const { data, error } = await supabase
       .from('organizations')
       .update({ is_active: isActive })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return transformOrganization(data);
+  },
+
+  updateOrganization: async (id: string, updates: { name?: string; slug?: string }): Promise<any> => {
+    const { data, error } = await supabase
+      .from('organizations')
+      .update(updates)
       .eq('id', id)
       .select()
       .single();
