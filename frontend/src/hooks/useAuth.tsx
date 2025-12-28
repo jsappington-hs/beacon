@@ -152,10 +152,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(error.message);
     }
 
+    // Don't call fetchUserProfile here - onAuthStateChange handles it
+    // Just wait a moment for the auth state to propagate
     if (data.user) {
-      console.log('login: Calling fetchUserProfile...');
-      await fetchUserProfile(data.user);
-      console.log('login: fetchUserProfile complete');
+      console.log('login: Waiting for auth state to propagate...');
+      // Give onAuthStateChange time to fire and fetch profile
+      await new Promise(resolve => setTimeout(resolve, 500));
+      console.log('login: Done waiting');
     }
   };
 
